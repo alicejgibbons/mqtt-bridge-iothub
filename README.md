@@ -12,6 +12,8 @@ The generic MQTT client part as well as IoT Hub Connection string are configured
  * **DEVICE_CONNECTION_STRING** - your IoT Hub Device Connection String
  * **MQTT_SERVER** - full address of your MQTT Server (i.e. mqtt://test.mosquitto.org:1883)
  * **MQTT_TOPIC** - relative address of your MQTT Topic (i.e. /v1/flex/001F4808EA60/interesting_events)
+ * **USERNAME** - username to subscribe to your MQTT Topic 
+ * **PASSWORD** - password to subscribe to your MQTT Topic 
 
 ## Docker HUB
 The image is published to [Docker HUB](https://hub.docker.com/r/astaykov/mqtt-bridge-iothub/)
