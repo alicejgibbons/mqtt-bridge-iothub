@@ -11,12 +11,20 @@ var Message = require('azure-iot-device').Message;
 var connectionString = process.env.DEVICE_CONNECTION_STRING;
 var mqttServer = process.env.MQTT_SERVER; // i.e. 'mqtt://test.mosquitto.org:1883'
 var mqttTopic = process.env.MQTT_TOPIC; // i.e. '/v1/flex/001F4808EA60/interesting_events'
+var options = {username: process.env.USERNAME, password: process.env.PASSWORD} // auth for topic
 
 console.log('Connection String:\n' + connectionString);
+console.log('Connecting with username:\n' + options.username);
 
 if(connectionString == null || typeof(connectionString) == undefined || connectionString.length < 52)
 {
-	printErrorFor('DEVICE_CONNECTION_STRING')('No valid connection string provided');
+	printResultFor('DEVICE_CONNECTION_STRING')('No valid connection string provided');
+}
+
+// If no username then set options to be empty
+if(options.username == null || typeof(options.username) == undefined || options.username < 1)
+{
+  options = {}
 }
 
 var deviceId = ConnectionString.parse(connectionString).DeviceId;
@@ -24,40 +32,41 @@ var deviceId = ConnectionString.parse(connectionString).DeviceId;
 // Create IoT Hub client
 var client = Client.fromConnectionString(connectionString, Protocol);
 
-// Helper function to print results for an operation
-function printErrorFor(op) {
-  return function printError(err) {
+// Helper function to print results in the console
+function printResultFor(op) {
+  return function printResult(err, res) {
     if (err) console.log(op + ' error: ' + err.toString());
+    if (res) console.log(op + ' status: ' + res.constructor.name);
   };
 }
 
 client.open(function (err) {
   if (err) {
-    printErrorFor('open')(err);
+    printResultFor('open')(err);
   } else {
     client.on('message', function (msg) {
       console.log('receive data: ' + msg.getData());
     });
     client.on('error', function (err) {
-      printErrorFor('client')(err);
+      printResultFor('client')(err);
       if (sendInterval) clearInterval(sendInterval);
-      client.close(printErrorFor('client.close'));
+      client.close(printResultFor('client.close'));
     });
   }
 });
 
 function sendDataToIoTHub(message)
 {
-  var data = JSON.stringify(message);
-  console.log('Sending device event data:\n' + data);
-  client.sendEvent(new Message(data), printErrorFor('send event'));
+  var final_message = new Message(message);
+  console.log('Sending to IoT Hub: \n' + final_message.getData());
+  client.sendEvent(final_message, printResultFor('send'));
 }
 
-var mqttClient = mqtt.connect(mqttServer);  
+var mqttClient = mqtt.connect(mqttServer, options); 
 mqttClient.on('connect', () => {  
   mqttClient.subscribe(mqttTopic);
 });
 mqttClient.on('message', (topic, message) => {  
-  console.log(`Received message: '${message}' on topic '${topic}'`);
+  console.log(`Received message from device: '${message}' \nTopic: '${topic}'`);
   sendDataToIoTHub(message);
 });
